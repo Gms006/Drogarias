@@ -1,0 +1,3 @@
+"""Funções auxiliares."""
+
+pass
