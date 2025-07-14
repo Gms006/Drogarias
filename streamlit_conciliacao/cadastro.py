@@ -1,4 +1,3 @@
-### streamlit_conciliacao/cadastro.py
 """CRUD de contas e fornecedores em arquivos JSON."""
 
 from __future__ import annotations
@@ -6,10 +5,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-# Diretório base para os dados
 DATA_DIR = Path(__file__).resolve().parents[1] / "data"
 
-# Estrutura padrão de cada arquivo contas.json
 DEFAULT_CADASTRO = {
     "fornecedores": {},
     "contas_pagamento": {},
@@ -30,7 +27,6 @@ def get_empresa_path(cnpj: str) -> Path:
 
 
 def _get_json_path(cnpj: str) -> Path:
-    """Retorna o caminho completo para o JSON de cadastros da empresa."""
     return get_empresa_path(cnpj) / "contas.json"
 
 
@@ -54,11 +50,7 @@ def save_cadastros(cnpj: str, data: dict) -> None:
     tmp_path.replace(json_path)
 
 
-# --------------------------------------------------------------------------- #
-# Operações CRUD genéricas                                                    #
-# --------------------------------------------------------------------------- #
 def _validar_categoria(categoria: str) -> None:
-    """Valida se a categoria é permitida."""
     if categoria not in VALID_CATEGORIAS:
         raise ValueError(f"Categoria inválida: {categoria}")
 
@@ -91,9 +83,6 @@ def delete_item(cnpj: str, categoria: str, chave: str) -> None:
     save_cadastros(cnpj, data)
 
 
-# --------------------------------------------------------------------------- #
-# Atalhos específicos                                                         #
-# --------------------------------------------------------------------------- #
 def add_fornecedor(cnpj: str, nome: str, codigo: int) -> None:
     """Atalho para adicionar fornecedor."""
     add_item(cnpj, "fornecedores", nome, codigo)
