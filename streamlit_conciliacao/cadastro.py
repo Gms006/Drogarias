@@ -1,3 +1,4 @@
+### streamlit_conciliacao/cadastro.py
 """CRUD de contas e fornecedores em arquivos JSON."""
 
 from __future__ import annotations
@@ -29,6 +30,7 @@ def get_empresa_path(cnpj: str) -> Path:
 
 
 def _get_json_path(cnpj: str) -> Path:
+    """Retorna o caminho completo para o JSON de cadastros da empresa."""
     return get_empresa_path(cnpj) / "contas.json"
 
 
@@ -52,7 +54,11 @@ def save_cadastros(cnpj: str, data: dict) -> None:
     tmp_path.replace(json_path)
 
 
+# --------------------------------------------------------------------------- #
+# Operações CRUD genéricas                                                    #
+# --------------------------------------------------------------------------- #
 def _validar_categoria(categoria: str) -> None:
+    """Valida se a categoria é permitida."""
     if categoria not in VALID_CATEGORIAS:
         raise ValueError(f"Categoria inválida: {categoria}")
 
@@ -85,6 +91,9 @@ def delete_item(cnpj: str, categoria: str, chave: str) -> None:
     save_cadastros(cnpj, data)
 
 
+# --------------------------------------------------------------------------- #
+# Atalhos específicos                                                         #
+# --------------------------------------------------------------------------- #
 def add_fornecedor(cnpj: str, nome: str, codigo: int) -> None:
     """Atalho para adicionar fornecedor."""
     add_item(cnpj, "fornecedores", nome, codigo)
@@ -107,4 +116,3 @@ def set_conta_especial(cnpj: str, campo: str, codigo: int) -> None:
     data = load_cadastros(cnpj)
     data[campo] = codigo
     save_cadastros(cnpj, data)
-
