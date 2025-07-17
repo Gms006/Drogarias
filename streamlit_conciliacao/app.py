@@ -9,7 +9,11 @@ from typing import Any, Dict
 import pandas as pd
 import streamlit as st
 
-from .utils import get_logger, read_extrato, read_lancamentos
+from streamlit_conciliacao.utils import (
+    get_logger,
+    read_extrato,
+    read_lancamentos,
+)
 
 DATA_DIR = Path(__file__).resolve().parents[1] / "data"
 LOGGER = get_logger()
