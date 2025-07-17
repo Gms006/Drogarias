@@ -58,7 +58,10 @@ def main() -> None:
         st.json(config)
 
     extrato_file = st.file_uploader("Extrato Bancário (.xlsx)", type=["xlsx"])
-    lanc_file = st.file_uploader("Planilha de Lançamentos (.xlsx)", type=["xlsx"])
+    lanc_file = st.file_uploader(
+        "Planilha de Lançamentos (.xlsx)",
+        type=["xlsx"],
+    )
 
     if extrato_file is not None:
         try:

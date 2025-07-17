@@ -1,12 +1,12 @@
-import json
+import sys
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-import pandas as pd
-import pytest
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from streamlit_conciliacao import utils
-from streamlit_conciliacao import utils_git
+import pandas as pd  # noqa: E402
+from streamlit_conciliacao import utils  # noqa: E402
+from streamlit_conciliacao import utils_git  # noqa: E402
 
 
 def test_leitura_e_csv(tmp_path: Path) -> None:
@@ -34,7 +34,10 @@ def test_commit_json(monkeypatch):
     github_instance = MagicMock()
     github_instance.get_repo.return_value = repo_mock
 
-    with patch("streamlit_conciliacao.utils_git.Github", return_value=github_instance) as gh_cls:
+    with patch(
+        "streamlit_conciliacao.utils_git.Github",
+        return_value=github_instance,
+    ) as gh_cls:
         repo_mock.get_contents.return_value = file_mock
         utils_git.commit_json("t", "org/repo", "p.json", {"x": 1}, "msg")
         repo_mock.update_file.assert_called_once()
@@ -49,4 +52,3 @@ def test_commit_json(monkeypatch):
     with patch("streamlit_conciliacao.utils_git.Github") as gh_cls:
         utils_git.commit_json("", "", "a.json", {}, "msg")
         gh_cls.assert_not_called()
-
