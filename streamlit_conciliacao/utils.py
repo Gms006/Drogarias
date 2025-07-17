@@ -42,16 +42,21 @@ def get_logger() -> logging.Logger:
     return logger
 
 
-def _read_excel(path: Path) -> pd.DataFrame:
-    return pd.read_excel(path, engine="openpyxl")
+def _read_excel(path_or_buffer: Any) -> pd.DataFrame:
+    """Lê um arquivo Excel com ``openpyxl``.
+
+    O parâmetro pode ser um ``Path`` ou um objeto de arquivo fornecido
+    pelo ``st.file_uploader`` do Streamlit.
+    """
+    return pd.read_excel(path_or_buffer, engine="openpyxl")
 
 
-def read_extrato(path: Path) -> pd.DataFrame:
+def read_extrato(path: Any) -> pd.DataFrame:
     """Lê arquivo de extrato bancário em Excel."""
     return _read_excel(path)
 
 
-def read_lancamentos(path: Path) -> pd.DataFrame:
+def read_lancamentos(path: Any) -> pd.DataFrame:
     """Lê planilha de lançamentos em Excel."""
     return _read_excel(path)
 

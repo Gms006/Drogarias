@@ -5,8 +5,10 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+# Diretório base para os dados
 DATA_DIR = Path(__file__).resolve().parents[1] / "data"
 
+# Estrutura padrão de cada arquivo contas.json
 DEFAULT_CADASTRO = {
     "fornecedores": {},
     "contas_pagamento": {},
