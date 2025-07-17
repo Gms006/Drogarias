@@ -65,4 +65,3 @@ def to_csv_padronizado(df: pd.DataFrame, path: Path) -> None:
     """Salva ``df`` em CSV usando ``;`` e ``utf-8-sig``."""
     path.parent.mkdir(parents=True, exist_ok=True)
     df.to_csv(path, sep=";", index=False, encoding="utf-8-sig")
-

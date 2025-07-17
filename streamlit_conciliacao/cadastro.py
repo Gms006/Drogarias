@@ -107,4 +107,3 @@ def set_conta_especial(cnpj: str, campo: str, codigo: int) -> None:
     data = load_cadastros(cnpj)
     data[campo] = codigo
     save_cadastros(cnpj, data)
-
