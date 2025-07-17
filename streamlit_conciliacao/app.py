@@ -1,5 +1,3 @@
-"""Interface inicial do sistema de conciliação."""
-
 from __future__ import annotations
 
 import json
