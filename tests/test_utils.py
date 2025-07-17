@@ -10,7 +10,7 @@ from streamlit_conciliacao import utils_git
 
 
 def test_leitura_e_csv(tmp_path: Path) -> None:
-    df = pd.DataFrame({"A": [1, 2]})
+    df = pd.DataFrame({"A": [1, 2], "B": [3, 4]})
     excel_path = tmp_path / "dados.xlsx"
     with pd.ExcelWriter(excel_path, engine="openpyxl") as writer:
         df.to_excel(writer, index=False)
