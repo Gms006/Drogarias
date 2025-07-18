@@ -29,9 +29,16 @@ def _parse_valor_extrato(valor: Any) -> tuple[float, str]:
 
 
 def _parse_valor(valor: Any) -> float:
-    """Converte valor brasileiro ('1.234,56') para float."""
+    """
+    Converte valor brasileiro ('1.234,56') para float.
+
+    Aceita strings vazias, ``None`` ou ``NaN`` e devolve 0.0 para
+    evitar propagação de valores ausentes nas validações.
+    """
+    if valor is None or (isinstance(valor, float) and pd.isna(valor)):
+        return 0.0
     s = str(valor).strip()
-    if not s:
+    if not s or s.lower() == "nan":
         return 0.0
     return float(s.replace(".", "").replace(",", "."))
 
@@ -94,9 +101,7 @@ def _marca_lote(rows: List[dict]) -> None:
 def _balance_check(rows: List[dict]) -> None:
     """Valida se débitos = créditos no bloco atual."""
     total_deb = sum(_parse_valor(r["Valor"]) for r in rows if r["Cod Conta Débito"])
-    total_cred = sum(
-        _parse_valor(r["Valor"]) for r in rows if r["Cod Conta Crédito"]
-    )
+    total_cred = sum(_parse_valor(r["Valor"]) for r in rows if r["Cod Conta Crédito"])
     if round(total_deb - total_cred, 2) != 0:
         raise ValueError(
             f"Partidas não fecham: débitos {total_deb} != créditos {total_cred}"

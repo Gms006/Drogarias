@@ -10,7 +10,7 @@ from typing import Any, Dict
 import pandas as pd
 import streamlit as st
 
-from streamlit_conciliacao import conciliador
+from streamlit_conciliacao import conciliador  # Usamos importação absoluta para funcionar no ``streamlit run``
 from streamlit_conciliacao.utils import (
     get_logger,
     read_extrato,
