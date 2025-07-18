@@ -4,3 +4,4 @@ openpyxl
 numpy
 python-dateutil
 PyGithub
+-e .
