@@ -92,9 +92,11 @@ def _balance_check(rows: List[dict]) -> None:
         _parse_valor(r["Valor"]) for r in rows if r["Cod Conta Crédito"]
     )
     if round(total_deb - total_cred, 2) != 0:
-        raise ValueError(
-            f"Partidas não fecham: débitos {total_deb} != créditos {total_cred}"
+        msg = (
+            "Partidas não fecham: "
+            f"débitos {total_deb} != créditos {total_cred}"
         )
+        raise ValueError(msg)
 
 
 def conciliar(
