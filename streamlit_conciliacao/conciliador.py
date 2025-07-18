@@ -78,6 +78,9 @@ def _adicionar_linha(
     credito: Optional[int] = None,
 ) -> None:
     """Adiciona uma linha (débito/crédito) ao resultado."""
+    if debito and credito:
+        raise ValueError("Linha não pode conter débito e crédito simultâneos")
+
     rows.append(
         {
             "Data": data,
@@ -143,7 +146,7 @@ def conciliar(
     conta_tarifa = config.get("tarifas", 316)
 
     # ------------------------------------------------------------------
-    # Pré-processamento da planilha de lançamentos
+    # Pré‑processamento da planilha de lançamentos
     # ------------------------------------------------------------------
     lanc = df_lancamentos.copy()
     lanc["_valor_nota"] = lanc["Valor"].apply(_parse_valor)
@@ -157,23 +160,55 @@ def conciliar(
     resultado: List[dict] = []
 
     # ------------------------------------------------------------------
-    # 1) Percorrer o extrato e casar cada saída 'D'
+    # 1) Percorrer o extrato e casar cada saída 'D' (e tratar créditos 'C')
     # ------------------------------------------------------------------
     for _, ext in df_extrato.iterrows():
         valor, tipo = _parse_valor_extrato(ext["Valor"])
         data = _fmt_data(ext["Data"])
 
-        # Ignora créditos
+        # Entradas (C) – depósito / PIX recebido
+        if tipo == "C":
+            linhas: List[dict] = []
+            cliente = str(ext.get("Histórico", ""))
+            conta_cli = config.get("clientes", {}).get(cliente, CONTA_CAIXA)
+
+            _adicionar_linha(
+                linhas,
+                data=data,
+                valor=valor,
+                hist=COD_HISTORICO_DEPOSITO,
+                complemento="",
+                debito=banco_conta,
+                tipo="Entrada",
+            )
+            _adicionar_linha(
+                linhas,
+                data=data,
+                valor=valor,
+                hist=COD_HISTORICO_DEPOSITO,
+                complemento="",
+                credito=conta_cli,
+                tipo="Entrada",
+            )
+            _marca_lote(linhas)
+            _balance_check(linhas)
+            resultado.extend(linhas)
+            continue  # próximo movimento
+
+        # Se não for débito, ignora
         if tipo != "D":
             continue
 
+        # Tenta casar com planilha
         possiveis = lanc[
             (lanc["_data"] == data)
             & (lanc["_valor_pagar"] == valor)
             & (~lanc["_matched"])
         ]
 
+        # ------------------------------------------------------------------
         # 1.a) Encontrou match na planilha
+        # ------------------------------------------------------------------
         if not possiveis.empty:
             idx = possiveis.index[0]
             row = lanc.loc[idx]
@@ -192,7 +227,7 @@ def conciliar(
             )
 
             if not extras:
-                # Lançamento simples
+                # Lançamento simples (2 linhas)
                 _adicionar_linha(
                     linhas,
                     data=data,
@@ -200,6 +235,14 @@ def conciliar(
                     hist=COD_HISTORICO_PAGAMENTO,
                     complemento=compl,
                     debito=conta_forn,
+                    tipo="Banco",
+                )
+                _adicionar_linha(
+                    linhas,
+                    data=data,
+                    valor=row["_valor_pagar"],
+                    hist=COD_HISTORICO_PAGAMENTO,
+                    complemento=compl,
                     credito=banco_conta,
                     tipo="Banco",
                 )
@@ -258,7 +301,9 @@ def conciliar(
             _balance_check(linhas)
             resultado.extend(linhas)
 
+        # ------------------------------------------------------------------
         # 1.b) Sem match → usa conta padrão
+        # ------------------------------------------------------------------
         else:
             linhas: List[dict] = []
             _adicionar_linha(
@@ -268,6 +313,14 @@ def conciliar(
                 hist=COD_HISTORICO_PAGAMENTO,
                 complemento="",
                 debito=CONTA_FORNECEDOR_PADRAO,
+                tipo="Extrato",
+            )
+            _adicionar_linha(
+                linhas,
+                data=data,
+                valor=valor,
+                hist=COD_HISTORICO_PAGAMENTO,
+                complemento="",
                 credito=banco_conta,
                 tipo="Extrato",
             )
@@ -301,6 +354,14 @@ def conciliar(
                 hist=COD_HISTORICO_PAG_CAIXA,
                 complemento=compl,
                 debito=conta_forn,
+                tipo="Caixa",
+            )
+            _adicionar_linha(
+                linhas,
+                data=data,
+                valor=row["_valor_pagar"],
+                hist=COD_HISTORICO_PAG_CAIXA,
+                complemento=compl,
                 credito=CONTA_CAIXA,
                 tipo="Caixa",
             )

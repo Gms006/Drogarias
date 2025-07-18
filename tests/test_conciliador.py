@@ -8,8 +8,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from streamlit_conciliacao import conciliador  # noqa: E402
 
 
+# ----------------------------------------------------------------------
+# 1) Pagamento casado 1‑a‑1 com o extrato (saída D)
+# ----------------------------------------------------------------------
 def test_pagamento_conciliado():
-    """Extrato casa 1‑a‑1 com o lançamento — gera apenas uma linha."""
     df_extrato = pd.DataFrame(
         {
             "Data": ["01/01/2024"],
@@ -38,20 +40,19 @@ def test_pagamento_conciliado():
 
     result = conciliador.conciliar(df_extrato, df_lanc, config)
 
-    assert len(result) == 1
-    row = result.iloc[0]
-    assert row["Cod Conta Débito"] == 10
-    assert row["Cod Conta Crédito"] == 7
-    assert row["Valor"] == "100,00"
-    assert row["Cod Histórico"] == 34
-    assert row["Complemento"] == "123 ACME"
+    # Lançamento simples gera 2 linhas (débito fornecedor, crédito banco)
+    assert len(result) == 2
+    assert result.iloc[0]["Cod Conta Débito"] == 10
+    assert result.iloc[1]["Cod Conta Crédito"] == 7
+    assert result.iloc[0]["Valor"] == "100,00"
+    assert result.iloc[0]["Cod Histórico"] == 34
+    assert result.iloc[0]["Complemento"] == "123 ACME"
 
 
+# ----------------------------------------------------------------------
+# 2) Pagamento que não casa com o extrato → vai para caixa
+# ----------------------------------------------------------------------
 def test_pagamento_caixa_restante():
-    """
-    Extrato **não** casa; lançamento vai para caixa
-    (multas, descontos, tarifa ⇒ composto de 5 linhas).
-    """
     df_extrato = pd.DataFrame(
         {
             "Data": ["01/01/2024"],
@@ -80,13 +81,51 @@ def test_pagamento_caixa_restante():
 
     result = conciliador.conciliar(df_extrato, df_lanc, config)
 
-    # 1ª linha: saída do extrato não conciliada (débito padrão × crédito banco)
+    # 1ª e 2ª linhas = extrato não conciliado (débito padrão / crédito banco)
     assert result.iloc[0]["Cod Conta Débito"] == 5
-    assert result.iloc[0]["Cod Conta Crédito"] == 7
+    assert result.iloc[1]["Cod Conta Crédito"] == 7
 
-    # Linhas do lançamento não conciliado começam na posição 1
-    assert result.iloc[1]["Cod Histórico"] == 1  # COD_HISTORICO_PAG_CAIXA
-    assert result.iloc[1]["Inicia Lote"] == "1"
+    # Lançamento em caixa começa na linha 2 (index 2)
+    assert result.iloc[2]["Cod Histórico"] == 1  # COD_HISTORICO_PAG_CAIXA
+    assert result.iloc[2]["Inicia Lote"] == "1"
 
-    # Total esperado: 1 linha do extrato + 5 linhas do lançamento = 6
-    assert len(result) == 6
+    # Esperado: 2 linhas do extrato + 5 do lançamento composto = 7
+    assert len(result) == 7
+
+
+# ----------------------------------------------------------------------
+# 3) Entrada de cliente (PIX recebido) — crédito C
+# ----------------------------------------------------------------------
+def test_entrada_cliente():
+    df_extrato = pd.DataFrame(
+        {
+            "Data": ["02/01/2024"],
+            "Histórico": ["PIX RECEBIDO - OUTRA IF"],
+            "Valor": ["50,00C"],
+        }
+    )
+    # Sem planilha de lançamentos
+    df_lanc = pd.DataFrame(
+        columns=[
+            "Data pagamento",
+            "Nome do fornecedor",
+            "Nota fiscal",
+            "Valor",
+            "Descontos",
+            "Multa e juros",
+            "Valor a pagar",
+            "Tarifas de Boleto",
+        ]
+    )
+    config = {
+        "contas_pagamento": {"Banco": 7},
+        "clientes": {"PIX RECEBIDO - OUTRA IF": 5},
+    }
+
+    result = conciliador.conciliar(df_extrato, df_lanc, config)
+
+    # Duas linhas: débito banco / crédito cliente
+    assert len(result) == 2
+    assert result.iloc[0]["Cod Conta Débito"] == 7
+    assert result.iloc[1]["Cod Conta Crédito"] == 5
+    assert result.iloc[0]["Valor"] == "50,00"
