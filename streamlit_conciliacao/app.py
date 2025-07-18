@@ -21,12 +21,22 @@ LOGGER = get_logger()
 
 
 def _listar_empresas() -> Dict[str, Path]:
+ 95femc-codex/fix-relative-import-in-app.py
+    """Retorna CNPJs disponíveis mapeando para ``contas_config.json``."""
+    empresas: Dict[str, Path] = {}
+    for pasta in DATA_DIR.iterdir():
+        if pasta.is_dir():
+            cfg = pasta / "contas_config.json"
+            if cfg.exists():
+                empresas[pasta.name] = cfg
+    return empresas
     """
     Retorna um dicionário mapeando CNPJ para o caminho do arquivo de configuração.
     Procura arquivos no formato contas_config_<CNPJ>.json diretamente em data/.
     """
     arquivos = DATA_DIR.glob("contas_config_*.json")
     return {arq.stem.replace("contas_config_", ""): arq for arq in arquivos}
+ main
 
 
 def _carregar_config(path: Path) -> Dict[str, Any]:
