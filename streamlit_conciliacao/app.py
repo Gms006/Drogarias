@@ -182,7 +182,7 @@ def main() -> None:
             )
 
             # ----------------------------------------------------------
-            # Feedback e prévia do resultado
+            # Feedback e prévia
             # ----------------------------------------------------------
             st.success("Conciliação realizada com sucesso!")
             export_df = conciliado.drop(columns="_tipo", errors="ignore")
