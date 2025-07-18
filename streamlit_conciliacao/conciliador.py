@@ -7,18 +7,19 @@ from typing import Any, List, Optional
 
 import pandas as pd
 
-# --- Constantes padrão ----------------------------------------------------
+# --------------------------------------------------------------------------
+# Constantes contábeis
+# --------------------------------------------------------------------------
 CONTA_FORNECEDOR_PADRAO = 5
 CONTA_CAIXA = 5
 COD_HISTORICO_PAGAMENTO = 34
 COD_HISTORICO_PAG_CAIXA = 1
 COD_HISTORICO_DEPOSITO = 9
-# -------------------------------------------------------------------------
 
 
-# -------------------------------------------------------------------------
+# --------------------------------------------------------------------------
 # Utilidades de formatação e parsing
-# -------------------------------------------------------------------------
+# --------------------------------------------------------------------------
 def _parse_valor_extrato(valor: Any) -> tuple[float, str]:
     """Converte valor do extrato (ex.: ``'123,00D'``) em ``(valor, tipo)``."""
     s = str(valor).strip()
@@ -36,7 +37,7 @@ def _parse_valor(valor: Any) -> float:
 
 
 def _fmt_valor(valor: float) -> str:
-    """Formata ``float`` em string ``'123,45'``."""
+    """Formata ``float`` como string ``'123,45'``."""
     return f"{valor:.2f}".replace(".", ",")
 
 
@@ -55,9 +56,9 @@ def _clean_nota(nota: Any) -> str:
     return re.sub(r"\D", "", str(nota))
 
 
-# -------------------------------------------------------------------------
+# --------------------------------------------------------------------------
 # Funções auxiliares para gerar as partidas contábeis
-# -------------------------------------------------------------------------
+# --------------------------------------------------------------------------
 def _adicionar_linha(
     rows: List[dict],
     *,
@@ -104,9 +105,9 @@ def _balance_check(rows: List[dict]) -> None:
         )
 
 
-# -------------------------------------------------------------------------
+# --------------------------------------------------------------------------
 # Função principal de conciliação
-# -------------------------------------------------------------------------
+# --------------------------------------------------------------------------
 def conciliar(
     df_extrato: pd.DataFrame,
     df_lancamentos: pd.DataFrame,
@@ -129,7 +130,9 @@ def conciliar(
         Código da conta do banco; se omitido, usa a primeira de
         ``config['contas_pagamento']``.
     """
-    # --- Contas contábeis --------------------------------------------------
+    # ------------------------------------------------------------------
+    # Contas contábeis
+    # ------------------------------------------------------------------
     banco_conta = conta_banco or _get_primeira_conta(
         config.get("contas_pagamento", {})
     )
@@ -137,9 +140,10 @@ def conciliar(
     conta_desconto = config.get("descontos", 0)
     conta_tarifa = config.get("tarifas", 316)
 
-    # --- Pré-processamento dos lançamentos --------------------------------
+    # ------------------------------------------------------------------
+    # Pré-processamento dos lançamentos
+    # ------------------------------------------------------------------
     lanc = df_lancamentos.copy()
-
     lanc["_valor_nota"] = lanc["Valor"].apply(_parse_valor)
     lanc["_valor_pagar"] = lanc["Valor a pagar"].apply(_parse_valor)
     lanc["_multa"] = lanc["Multa e juros"].apply(_parse_valor)
@@ -150,14 +154,14 @@ def conciliar(
 
     resultado: List[dict] = []
 
-    # ---------------------------------------------------------------------
-    # 1) Percorre o extrato: cada saída “D” deve casar com um lançamento
-    # ---------------------------------------------------------------------
+    # ------------------------------------------------------------------
+    # 1) Percorre o extrato e tenta casar cada saída “D” com um lançamento
+    # ------------------------------------------------------------------
     for _, ext in df_extrato.iterrows():
         valor, tipo = _parse_valor_extrato(ext["Valor"])
         data = _fmt_data(ext["Data"])
 
-        # Considera apenas débitos (saídas)
+        # Só interessa saída (D)
         if tipo != "D":
             continue
 
@@ -167,9 +171,7 @@ def conciliar(
             & (~lanc["_matched"])
         ]
 
-        # -----------------------------------------------------------------
         # 1.a) Encontrou correspondência no lançamento
-        # -----------------------------------------------------------------
         if not possiveis.empty:
             idx = possiveis.index[0]
             row = lanc.loc[idx]
@@ -190,7 +192,7 @@ def conciliar(
             )
 
             if not extras:
-                # Lançamento simples (sem multas, descontos, tarifas)
+                # Lançamento simples
                 _adicionar_linha(
                     linhas,
                     data=data,
@@ -256,9 +258,7 @@ def conciliar(
             _balance_check(linhas)
             resultado.extend(linhas)
 
-        # -----------------------------------------------------------------
-        # 1.b) Saída do extrato sem correspondente → conta “fornecedor padrão”
-        # -----------------------------------------------------------------
+        # 1.b) Saída sem match → usa conta “fornecedor padrão”
         else:
             linhas: List[dict] = []
             _adicionar_linha(
@@ -275,9 +275,9 @@ def conciliar(
             _balance_check(linhas)
             resultado.extend(linhas)
 
-    # ---------------------------------------------------------------------
-    # 2) Lançamentos sem correspondente no extrato → pagto em caixa
-    # ---------------------------------------------------------------------
+    # ------------------------------------------------------------------
+    # 2) Lançamentos sem correspondente no extrato → pagamento em caixa
+    # ------------------------------------------------------------------
     restantes = lanc[~lanc["_matched"]]
     for _, row in restantes.iterrows():
         data = row["_data"]
@@ -360,9 +360,9 @@ def conciliar(
         _balance_check(linhas)
         resultado.extend(linhas)
 
-    # ---------------------------------------------------------------------
+    # ------------------------------------------------------------------
     # 3) DataFrame final
-    # ---------------------------------------------------------------------
+    # ------------------------------------------------------------------
     cols = [
         "Data",
         "Cod Conta Débito",

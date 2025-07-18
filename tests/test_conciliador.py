@@ -9,7 +9,7 @@ from streamlit_conciliacao import conciliador  # noqa: E402
 
 
 def test_pagamento_conciliado():
-    """Saída do extrato casa 1-a-1 com o lançamento — gera só uma linha."""
+    """Extrato casa 1‑a‑1 com o lançamento — gera apenas uma linha."""
     df_extrato = pd.DataFrame(
         {
             "Data": ["01/01/2024"],
@@ -49,8 +49,8 @@ def test_pagamento_conciliado():
 
 def test_pagamento_caixa_restante():
     """
-    Saída do extrato **não** casa; lançamento vai para caixa
-    (multas, descontos, tarifa ⇒ lançamento composto de 5 linhas).
+    Extrato **não** casa; lançamento vai para caixa
+    (multas, descontos, tarifa ⇒ composto de 5 linhas).
     """
     df_extrato = pd.DataFrame(
         {
@@ -80,7 +80,7 @@ def test_pagamento_caixa_restante():
 
     result = conciliador.conciliar(df_extrato, df_lanc, config)
 
-    # 1ª linha: saída do extrato não conciliada (débito conta padrão x crédito banco)
+    # 1ª linha: saída do extrato não conciliada (débito padrão × crédito banco)
     assert result.iloc[0]["Cod Conta Débito"] == 5
     assert result.iloc[0]["Cod Conta Crédito"] == 7
 
@@ -88,5 +88,5 @@ def test_pagamento_caixa_restante():
     assert result.iloc[1]["Cod Histórico"] == 1  # COD_HISTORICO_PAG_CAIXA
     assert result.iloc[1]["Inicia Lote"] == "1"
 
-    # Total: 1 linha do extrato + 5 linhas do lançamento composto = 6
+    # Total esperado: 1 linha do extrato + 5 linhas do lançamento = 6
     assert len(result) == 6
