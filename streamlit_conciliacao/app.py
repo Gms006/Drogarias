@@ -18,9 +18,19 @@ LOGGER = get_logger()
 
 
 def _listar_empresas() -> Dict[str, Path]:
-    """Retorna um dicionário mapeando CNPJ para caminho do arquivo JSON."""
-    arquivos = DATA_DIR.glob("contas_config_*.json")
-    return {arq.stem.replace("contas_config_", ""): arq for arq in arquivos}
+    """
+    Retorna um dicionário mapeando CNPJ (nome da subpasta) para o caminho do arquivo JSON de configuração.
+    Espera estrutura: data/<CNPJ>/contas_config.json
+    """
+    empresas = {}
+    for subdir in DATA_DIR.iterdir():
+        if subdir.is_dir():
+            config_path = subdir / "contas_config.json"
+            if config_path.exists():
+                cnpj = subdir.name
+                empresas[cnpj] = config_path
+    return empresas
+
 
 
 def _carregar_config(path: Path) -> Dict[str, Any]:
